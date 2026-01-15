@@ -1,19 +1,14 @@
 #Create a random password generator with full functioning GUI and menu
 '''
-Password strength presets,
-Color + UI polishing w/ ANSI codes:
-    RED = "\033[91m"
-    GREEN = "\033[92m"
-    YELLOW = "\033[93m"
-    BLUE = "\033[94m"
-    CYAN = "\033[96m"
-    RESET = "\033[0m",
-Error handling,
-Clean architecture
+Generates persistent key from key.key file,
+Add encryption to saved passwords before writing to file,
+Decrypts saved passwords when viewing them
 '''
 
 import random
 import string
+import os
+from cryptography.fernet import Fernet
 
 # Color Codes for UI
 RED = "\033[91m"
@@ -23,19 +18,38 @@ BLUE = "\033[94m"
 CYAN = "\033[96m"
 RESET = "\033[0m"
 
-# Password Generation Algrithm
+# Encryption Key Management
 
-def generate_password():
-    length = int(input("Enter password length: "))
-    characters = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(random.choise(characters) for _ in range(length))
-    print("Generated password:", password)
+def load_or_create_key():
+    key_file = "key.key"
+    if os.path.exists(key_file):
+        with open(key_file, "rb") as f:
+            key = f.read()
+    else:
+        key =Fernet.generate_key()
+        with open(key_file, "wb") as f:
+            f.write(key)
+        print(YELLOW + "New encryption key created and saved to key.key" + RESET)
+    return Fernet(key)
 
 # Password Generation Functions
 
+def build_character_set(settings):
+    chars = ""
+    if settings["use_lowercase"]:
+        chars += string.ascii_lowercase
+    if settings["use_uppercase"]:
+        chars += string.ascii_uppercase
+    if settings["use_numbers"]:
+        chars += string.digits
+    if settings["use_symbols"]:
+        chars += string.punctuation
+    settings["characters"] = chars
+    return chars
+
 def generate_password(settings):
     try:
-        characters = update_character_set(settings)
+        characters = build_character_set(settings)
         if not characters:
             print(RED + "Error: No character types selected." + RESET)
             return None
@@ -43,7 +57,7 @@ def generate_password(settings):
     except Exception as e:
         print(RED + f"Unexpected Error: {e}" + RESET)
         return None
-
+    
 def generate_multiple(settings):
     try:
         count = int(input("How many passwords?"))
@@ -100,11 +114,11 @@ def apply_preset(settings):
 def change_settings(settings):
     while True:
         print(CYAN + "\nChange Settings" + RESET)
-        print("1. Toggle symbols")
-        print("2. Toggle numbers")
-        print("3. Toggle uppercase letters")
-        print("4. Toggle lowercase letters")
-        print("5. Change password length")
+        print("1. Toggle symbols (currently: {})".format(settings["use_symbols"]))
+        print("2. Toggle numbers (currently: {})".format(settings["use_numbers"]))
+        print("3. Toggle uppercase letters (currently: {})".format(settings["use_uppercase"]))
+        print("4. Toggle lowercase letters (currently: {})".format(settings["use_lowercase"]))
+        print("5. Change password length (currently: {})".format(settings["length"]))
         print("6. Strength presets")
         print("7. Back to main menu")
 
@@ -134,52 +148,53 @@ def change_settings(settings):
         else:
             print(RED + "Invalid choice." + RESET)
 
-        update_character_set(settings)
-
-def update_character_set(settings):
-    chars = ""
-    if settings["use_lowercase"]:
-        chars += string.ascii_lowercase
-    if settings["use_uppercase"]:
-        chars += string.ascii_uppercase
-    if settings["use_numbers"]:
-        chars += string.digits
-    if settings["use_symbols"]:
-        chars += string.punctuation
-    
-    settings["characters"] = chars
-
 # File Management
 
-def save_password(pwd):
+def save_password(pwd, cipher):
+    if not pwd: 
+        return
     try:
-        with open("passwords.txt", "a") as f:
-            f.write(pwd + "\n")
+        token = cipher.encrypt(pwd.encode("utf-8"))
+        with open("passwords.txt", "ab") as f:
+            f.write(token + b"\n")
     except Exception as e:
         print(RED + f"Error saving password: {e}" + RESET)
 
-def view_saved():
-    print(CYAN + "\n Saved Passwords:" + RESET)
+def view_saved(cipher):
+    print(CYAN + "\nSaved Passwords:" + RESET)
     try:
-        with open("passwords.txt", "r") as f:
-            content = f.read().strip()
-            if content:
-                print(content)
-            else:
-                print(YELLOW + "No saved passwords." + RESET)
-    except FileNotFoundError:
-        print(YELLOW + "No saved passwords file found." + RESET)
+        if not os.path.exists("passwords.txt"):
+            print(YELLOW + "No saved passwords file found." + RESET)
+            return
+        with open("passwords.txt", "rb") as f:
+            lines = f.readlines()
+        if not lines:
+            print(YELLOW + "No saved passwords." + RESET)
+            return
+        for i, line in enumerate(lines, start = 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                decrypted = cipher.decrypt(line).decode("utf-8")
+                print(f"{i}. {decrypted}")
+            except Exception as e:
+                print(RED + f"Error decrypting line {i}: {e}" + RESET)
+    except Exception as e:
+        print(RED + f"Error reading file: {e}" + RESET)
 
 def clear_saved():
     try:
-        open("paswords.txt", "w").close()
-        print(GREEN + "Saved passwords cleared." + RESET)
+        open("passwords.txt", "w").close()
+        print (GREEN + "Saved passwords cleared." + RESET)
     except Exception as e:
         print(RED + f"Error clearing file: {e}" + RESET)
 
 # Main Program Loop
 
 def main():
+    cipher = load_or_create_key()
+
     settings = {
         "length": 12,
         "use_lowercase": True,
@@ -189,7 +204,7 @@ def main():
         "characters": ""
     }
 
-    update_character_set(settings)
+    build_character_set(settings)
 
     while True:
         print(BLUE + "\nPassword Generator Menu" + RESET)
@@ -206,16 +221,17 @@ def main():
             pwd = generate_password(settings)
             if pwd:
                 print(GREEN + "Generated: " + pwd + RESET)
+                save_password(pwd, cipher)
         elif choice == "2":
             pwds = generate_multiple(settings)
             for p in pwds:
                 if p:
                     print(GREEN + p + RESET)
-                    save_password(p)
+                    save_password(p, cipher)
         elif choice == "3":
             change_settings(settings)
         elif choice == "4":
-            view_saved()
+            view_saved(cipher)
         elif choice == "5":
             clear_saved()
         elif choice == "6":
@@ -224,4 +240,5 @@ def main():
         else: 
             print(RED + "Invalid choice. Try again." + RESET)
 
-main()
+if __name__ == "__main__":
+    main()
