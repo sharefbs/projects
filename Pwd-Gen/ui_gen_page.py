@@ -155,4 +155,3 @@ class GeneratePasswordPage(QWidget):
             return
         
         self.backend.save_password(label, pwd, self.cipher)
-        self.accept()
