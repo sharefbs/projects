@@ -1,18 +1,17 @@
-#Create the generate password dialog feature
+#Create the generate password page feature
 '''
-Connecting SettingsPage to GeneratePasswordDialog,
-Add default settings
+Replace dialog functionality with page widgets
 '''
 
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QSlider, QCheckBox
 )
 from PySide6.QtCore import Qt
 import random
 import string
 
-class GeneratePasswordDialog(QDialog):
+class GeneratePasswordPage(QWidget):
     def __init__(self, backend, cipher, settings, parent=None):
         super().__init__(parent)
 
