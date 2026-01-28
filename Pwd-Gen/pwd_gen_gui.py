@@ -18,7 +18,7 @@ import sys
 import json
 import os
 from ui_saved_passwords import SavedPasswordsPage
-from ui_gen_dialog import GeneratePasswordPage
+from ui_gen_page import GeneratePasswordPage
 from ui_settings_page import SettingsPage
 from ui_search_page import SearchPage
 from ui_import_export import ImportExportPage
@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         else:
             # Switch pages normally for other items
             self.pages.setCurrentIndex(index)
-            
+
     # Access json file
     def load_settings(self):
         if not os.path.exists("settings.json"):
