@@ -1,6 +1,6 @@
 #Create the generate password page feature
 '''
-Replace dialog functionality with page widgets
+Replace dialog functionality with page widget
 '''
 
 from PySide6.QtWidgets import (
