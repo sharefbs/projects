@@ -1,11 +1,7 @@
 #Create the generate password dialog feature
 '''
-Add features:
-live strength meter, Character-set toggles,
-Length slider, Label input field, Generate button,
-Save button
-
-Begin integration with backend
+Connecting SettingsPage to GeneratePasswordDialog,
+Add default settings
 '''
 
 from PySide6.QtWidgets import (
@@ -17,7 +13,7 @@ import random
 import string
 
 class GeneratePasswordDialog(QDialog):
-    def __init__(self, backend, cipher, parent=None):
+    def __init__(self, backend, cipher, settings, parent=None):
         super().__init__(parent)
 
         self.backend = backend
@@ -77,6 +73,13 @@ class GeneratePasswordDialog(QDialog):
 
         # Initial strength update
         self.update_strength()
+
+        # Default settings
+        self.length_slider.setValue(settings["default_length"])
+        self.lower_cb.setChecked(settings["lowercase"])
+        self.upper_cb.setChecked(settings["uppercase"])
+        self.number_cb.setChecked(settings["numbers"])
+        self.symbol_cb.setChecked(settings["symbols"])
 
     # Build character set
     def build_character(self):
