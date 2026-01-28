@@ -1,13 +1,7 @@
 #Create a random password generator command prompt menu, GUI is not required.
 #Passwords should be saved to a file with encryption.
 '''
-Revisit:
-Clear saved passwords function to allow label-based deletion,
-Multiple password generation and saving in main()
-
-Add features:
-Search function,
-Password strength meter
+Add backend helper to load passwords
 '''
 
 import random
@@ -387,6 +381,35 @@ def password_strength(password):
 
     print(f"Strength: {meter} {score}/10 ({label})")
     return score
+
+# Backend Helper to load passwords
+
+def load_all_passwords(cipher):
+    entries = []
+
+    if not os.path.exists("passwords.txt"):
+        print("No password file found.")
+        return entries
+    
+    with open("passwords.txt", "rb") as f:
+        lines = f.readlines()
+    
+    for line in lines:
+        if not line.strip():
+            continue
+        
+        try:
+            label, encrypted = line.split(b":", 1)
+            decrypted = cipher.decrypt(encrypted).decode("utf-8")
+
+            entries.append((label.decode("utf-8"), decrypted))
+            print("Loaded:", label.decode("utf-8"))
+
+        except Exception as e:
+            print("Failed to decrypt line:", line)
+            print("Error:", e)
+    
+    return entries
 
 # Main Program Loop
 
